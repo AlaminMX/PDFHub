@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Signing in…</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <script src="js/supabase.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>Signing you in…</h2>
+      <p class="small muted" id="msg">Processing authentication — please wait.</p>
+    </div>
+  </div>
+
+<script>
+(async function(){
+  const msgEl = document.getElementById('msg');
+  const client = window.supabaseClient;
+  if (!client) {
+    msgEl.textContent = 'Supabase client not ready. Try reloading.';
+    return;
+  }
+
+  try {
+    // This reads the URL tokens after a magic link redirect and stores the session in the browser.
+    // supabase-js v2 provides getSessionFromUrl to extract & store session from the URL returned by magic link.
+    const { data, error } = await client.auth.getSessionFromUrl({ storeSession: true });
+    if (error) {
+      console.error('getSessionFromUrl error', error);
+      msgEl.textContent = 'Sign-in error: ' + (error.message || error);
+      // fallback: give user link to login page
+      setTimeout(()=> window.location.href = 'login.html', 2500);
+      return;
+    }
+    // successful sign in -> redirect to dashboard
+    window.location.href = 'dashboard.html';
+  } catch (e) {
+    console.error(e);
+    msgEl.textContent = 'Auth processing failed.';
+    setTimeout(()=> window.location.href = 'login.html', 2000);
+  }
+})();
+</script>
+</body>
+</html>

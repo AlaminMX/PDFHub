@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PDF Viewer</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar"><a class="brand" href="dashboard.html">← Back</a></header>
+
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <button id="prev" class="btn ghost small">Prev</button>
+          <button id="next" class="btn ghost small">Next</button>
+          <span id="info" class="small muted" style="margin-left:8px"></span>
+        </div>
+        <div>
+          <a id="download" class="btn small" href="#" download>Download</a>
+          <a id="openraw" class="btn small ghost" href="#" target="_blank">Open raw</a>
+        </div>
+      </div>
+      <canvas id="pdfCanvas" class="viewer-canvas"></canvas>
+    </section>
+  </div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const url = params.get('url');
+if (!url) { alert('No file specified'); window.location.href='dashboard.html'; }
+
+const canvas = document.getElementById('pdfCanvas'); const ctx = canvas.getContext('2d');
+const prevBtn = document.getElementById('prev'); const nextBtn = document.getElementById('next'); const info = document.getElementById('info');
+document.getElementById('download').href = url; document.getElementById('openraw').href = url;
+
+let pdfDoc = null, currentPage = 1, total = 0;
+
+(async function load(){
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Fetch failed');
+    const arr = await res.arrayBuffer();
+    const loading = pdfjsLib.getDocument({ data: arr });
+    pdfDoc = await loading.promise;
+    total = pdfDoc.numPages;
+    render(currentPage);
+  } catch (e) {
+    console.error(e);
+    alert('Unable to load PDF (maybe signed URL expired).');
+    window.location.href='dashboard.html';
+  }
+})();
+
+async function render(p){
+  info.textContent = `${p} / ${total}`;
+  const page = await pdfDoc.getPage(p);
+  const vp = page.getViewport({ scale: 1.2 });
+  canvas.width = vp.width; canvas.height = vp.height;
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+}
+
+prevBtn.addEventListener('click', ()=> { if (currentPage>1){ currentPage--; render(currentPage);} });
+nextBtn.addEventListener('click', ()=> { if (currentPage<total){ currentPage++; render(currentPage);} });
+</script>
+</body>
+</html>

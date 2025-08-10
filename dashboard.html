@@ -1,0 +1,208 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard • PDF Vault</title>
+  <link rel="css/stylesheet" href="style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <a class="brand" href="index.html">PDF Vault</a>
+      <div>
+        <span id="userEmail" class="small muted">—</span>
+        <a id="profileLink" class="small muted link" href="#" target="_blank" rel="noopener">Profile</a>
+        <button id="logoutBtn" class="btn ghost small">Logout</button>
+      </div>
+    </header>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Upload a PDF</h2>
+      <div id="dropZone" class="uploader">Click or drag PDF here
+        <input id="fileInput" type="file" accept="application/pdf" style="display:none;">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="uploadBtn" class="btn primary">Upload</button>
+        <button id="refreshBtn" class="btn ghost">Refresh</button>
+      </div>
+      <div id="progress" style="display:none;margin-top:12px">
+        <div style="height:8px;background:#eee;border-radius:6px;overflow:hidden"><div id="bar" style="height:100%;width:0%;background:linear-gradient(90deg,#06f,#036)"></div></div>
+        <small id="ptext" class="small muted">0%</small>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>Your files</h2>
+      <div id="fileGrid" class="file-grid"><p class="small muted">Loading…</p></div>
+    </section>
+
+    <p class="footer">Files stored in bucket <code>pdfs</code> (private). View uses short signed URLs.</p>
+  </div>
+
+<script>
+const client = () => window.supabaseClient;
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const uploadBtn = document.getElementById('uploadBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const fileGrid = document.getElementById('fileGrid');
+const logoutBtn = document.getElementById('logoutBtn');
+const userEmail = document.getElementById('userEmail');
+const progressWrap = document.getElementById('progress');
+const bar = document.getElementById('bar');
+const ptext = document.getElementById('ptext');
+
+dropZone.addEventListener('click', ()=> fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor='#cbd5e1'; });
+dropZone.addEventListener('dragleave', ()=> dropZone.style.borderColor='transparent');
+dropZone.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files) fileInput.files = e.dataTransfer.files; });
+
+fileInput.addEventListener('change', ()=> { /* noop */ });
+
+(async function guard(){
+  const c = client();
+  if (!c) { alert('Supabase client not ready'); return; }
+  // check session
+  const { data } = await c.auth.getSession();
+  const session = data?.session;
+  if (!session) {
+    // Try to handle if user was redirected from magic link and hasn't been processed — check URL (but auth-callback should have handled it)
+    window.location.href = 'login.html';
+    return;
+  }
+  userEmail.textContent = session.user.email;
+  // load files for this user
+  await loadFiles();
+})();
+
+uploadBtn.addEventListener('click', async ()=>{
+  const c = client();
+  const f = fileInput.files[0];
+  if (!f) return alert('Select a PDF first.');
+  if (f.type !== 'application/pdf') return alert('Only PDF allowed.');
+  try {
+    progressWrap.style.display = 'block';
+    bar.style.width = '6%'; ptext.textContent='6%';
+    const { data: udata } = await c.auth.getUser();
+    const user = udata?.user;
+    if (!user) return window.location.href='login.html';
+    const path = `${user.id}/${Date.now()}_${f.name}`;
+
+    const { error: upErr } = await c.storage.from('pdfs').upload(path, f, { cacheControl: '3600', upsert: false });
+    if (upErr) throw upErr;
+
+    bar.style.width = '60%'; ptext.textContent='60%';
+
+    const { error: dbErr } = await c.from('files').insert([{
+      user_id: user.id,
+      file_name: f.name,
+      file_path: path,
+      size: f.size
+    }]);
+    if (dbErr) throw dbErr;
+
+    bar.style.width = '100%'; ptext.textContent='100%';
+    setTimeout(()=> { progressWrap.style.display='none'; bar.style.width='0%'; ptext.textContent='0%'; }, 600);
+    fileInput.value = '';
+    await loadFiles();
+    alert('Uploaded!');
+  } catch (err) {
+    console.error(err);
+    alert('Upload failed: ' + (err.message || JSON.stringify(err)));
+    progressWrap.style.display = 'none';
+  }
+});
+
+refreshBtn.addEventListener('click', loadFiles);
+
+async function loadFiles(){
+  fileGrid.innerHTML = '<p class="small muted">Loading…</p>';
+  try {
+    const c = client();
+    const { data, error } = await c.from('files').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0) { fileGrid.innerHTML = '<p class="small muted">No files yet.</p>'; return; }
+    fileGrid.innerHTML = data.map(f => {
+      return `
+        <div class="file-card" data-path="${encodeURIComponent(f.file_path)}" data-id="${f.id}">
+          <div><strong>${escapeHtml(f.file_name)}</strong>
+            <div class="small muted">${bytesToSize(f.size)} • ${new Date(f.created_at).toLocaleString()}</div>
+          </div>
+          <div class="actions">
+            <button class="btn small" data-action="view" data-path="${encodeURIComponent(f.file_path)}">View</button>
+            <button class="btn small" data-action="download" data-path="${encodeURIComponent(f.file_path)}">Download</button>
+            <button class="btn small ghost" data-action="delete" data-id="${f.id}" data-path="${encodeURIComponent(f.file_path)}">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    fileGrid.querySelectorAll('[data-action]').forEach(btn=>{
+      const act = btn.getAttribute('data-action');
+      if (act === 'view') btn.addEventListener('click', ()=> viewFile(decodeURIComponent(btn.getAttribute('data-path'))));
+      if (act === 'download') btn.addEventListener('click', ()=> downloadFile(decodeURIComponent(btn.getAttribute('data-path'))));
+      if (act === 'delete') btn.addEventListener('click', ()=> deleteFile(btn.getAttribute('data-id'), decodeURIComponent(btn.getAttribute('data-path'))));
+    });
+  } catch (err) {
+    console.error(err);
+    fileGrid.innerHTML = '<p class="small muted">Unable to load files.</p>';
+  }
+}
+
+async function viewFile(path){
+  try {
+    const c = client();
+    // create signed url (client-side). If your Storage policy prevents this, we'll need server signing.
+    const { data, error } = await c.storage.from('pdfs').createSignedUrl(path, 3600);
+    if (error) throw error;
+    const url = data.signedURL;
+    window.open(`viewer.html?url=${encodeURIComponent(url)}`, '_blank');
+  } catch (err) {
+    console.error(err);
+    alert('Unable to create preview link. If this fails, add a server signing endpoint.');
+  }
+}
+
+async function downloadFile(path){
+  try {
+    const c = client();
+    const { data, error } = await c.storage.from('pdfs').createSignedUrl(path, 3600);
+    if (error) throw error;
+    window.open(data.signedURL, '_blank');
+  } catch (err) {
+    console.error(err);
+    alert('Unable to create download link.');
+  }
+}
+
+async function deleteFile(id, path){
+  if (!confirm('Delete permanently?')) return;
+  try {
+    const c = client();
+    // delete row
+    const { error } = await c.from('files').delete().eq('id', id);
+    if (error) throw error;
+    // delete object
+    await c.storage.from('pdfs').remove([path]).catch(()=>null);
+    await loadFiles();
+  } catch (err) {
+    console.error(err);
+    alert('Delete failed.');
+  }
+}
+
+logoutBtn.addEventListener('click', async ()=>{
+  const c = client();
+  await c.auth.signOut();
+  window.location.href = 'login.html';
+});
+
+function bytesToSize(bytes){ if (!bytes) return '0 B'; const k=1024,s=['B','KB','MB','GB','TB'];const i=Math.floor(Math.log(bytes)/Math.log(k));return (bytes/Math.pow(k,i)).toFixed(2)+' '+s[i]; }
+function escapeHtml(s){ return (s||'').replace(/[&<"'>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Login • PDF Vault</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <script src="js/supabase.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar"><a class="brand" href="index.html">PDF Vault</a></header>
+
+    <section class="card">
+      <h2>Sign in / Register</h2>
+      <label class="small">Email</label>
+      <input id="email" class="input" type="email" placeholder="you@example.com" />
+      <label class="small">Password</label>
+      <input id="password" class="input" type="password" placeholder="Password (for email+password)" />
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="authBtn" class="btn primary" style="flex:1">Sign in / Register</button>
+        <button id="magicBtn" class="btn ghost" style="flex:1">Send Magic Link</button>
+      </div>
+      <p id="status" class="small muted" style="margin-top:10px"></p>
+    </section>
+  </div>
+
+<script>
+const client = () => window.supabaseClient;
+const emailEl = document.getElementById('email');
+const passEl = document.getElementById('password');
+const statusEl = document.getElementById('status');
+
+function setStatus(msg, isErr=false){ statusEl.textContent = msg; statusEl.style.color = isErr ? '#c53030' : '#374151'; }
+
+(async function check(){
+  const c = client();
+  if (!c) return setStatus('Supabase client not ready', true);
+  const { data } = await c.auth.getSession();
+  if (data?.session) window.location.href = 'dashboard.html';
+})();
+
+document.getElementById('authBtn').addEventListener('click', async ()=>{
+  const email = emailEl.value.trim(), password = passEl.value;
+  if (!email || !password) return setStatus('Provide email and password', true);
+  setStatus('Processing…');
+  try {
+    const c = client();
+    // Try sign-in first
+    let { data, error } = await c.auth.signInWithPassword({ email, password });
+    if (error) {
+      // If sign-in failed, try sign-up
+      const { data: suData, error: suErr } = await c.auth.signUp({ email, password });
+      if (suErr) return setStatus('Sign up failed: ' + suErr.message, true);
+      setStatus('Account created — check email if confirmation required.');
+      setTimeout(()=> window.location.href = 'dashboard.html', 900);
+    } else {
+      setStatus('Signed in. Redirecting…');
+      setTimeout(()=> window.location.href = 'dashboard.html', 600);
+    }
+  } catch (err) { console.error(err); setStatus('Auth error', true); }
+});
+
+document.getElementById('magicBtn').addEventListener('click', async ()=>{
+  const email = emailEl.value.trim();
+  if (!email) return setStatus('Enter email', true);
+  setStatus('Sending magic link…');
+  try {
+    const c = client();
+    // redirect back to auth-callback.html on your site
+    const redirectTo = window.location.origin + '/auth-callback.html';
+    const { error } = await c.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo }});
+    if (error) setStatus('Unable to send: ' + error.message, true);
+    else setStatus('Magic link sent — check inbox.');
+  } catch(e){ console.error(e); setStatus('Magic link error', true); }
+});
+</script>
+</body>
+</html>
