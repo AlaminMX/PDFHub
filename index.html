@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Organizer</title>
+    <link rel="stylesheet" href="pdfstyles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+  
+    <script type="module" src="pdfscript.js"></script>
+</head>
+<body>
+    <div id="app" class="min-h-screen bg-gradient">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="text-center">
+                <div class="spinner"></div>
+                <p class="text-gray-600">Loading your files...</p>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error-display" class="error-display hidden">
+            <div class="error-content">
+                <div class="error-icon">⚠️</div>
+                <span id="error-message"></span>
+                <button id="dismiss-error" class="error-dismiss">×</button>
+            </div>
+        </div>
+
+        <!-- PDF.js Status -->
+        <div id="pdfjs-loading" class="status-display hidden">
+            <div class="status-content">
+                <div class="spinner-small"></div>
+                <span>Loading PDF viewer...</span>
+            </div>
+        </div>
+
+        <div id="pdfjs-error" class="status-display status-warning hidden">
+            <div class="status-content">
+                <span>⚠️</span>
+                <span>PDF viewer failed to load. You can still upload and download files.</span>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <div id="main-container" class="container hidden">
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-icon">
+                    <svg class="icon-large" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                    </svg>
+                </div>
+                <h1 class="hero-title">Organize Your PDFs</h1>
+                <p class="hero-subtitle">Upload, organize, and manage your PDF files with ease. Create categories and keep everything organized.</p>
+            </div>
+
+            <!-- Mobile Categories Toggle -->
+            <div class="mobile-categories-toggle">
+                <button id="mobile-categories-btn" class="mobile-toggle-btn">
+                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
+                    </svg>
+                    <span id="mobile-categories-text">Categories (All Files)</span>
+                </button>
+            </div>
+
+            <div class="main-layout">
+                <!-- Categories Sidebar -->
+                <div id="categories-sidebar" class="categories-sidebar">
+                    <div class="sidebar-content">
+                        <div class="sidebar-header">
+                            <h3 class="sidebar-title">
+                                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.78 12.45,22 13,22C13.55,22 14.05,21.78 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.45 21.78,11.95 21.41,11.58Z" />
+                                </svg>
+                                <span class="desktop-only">Categories</span>
+                            </h3>
+                            <button id="add-category-btn" class="btn btn-primary btn-sm">
+                                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Add New Category Form -->
+                        <div id="new-category-form" class="new-category-form hidden">
+                            <input type="text" id="new-category-input" placeholder="Category name" class="form-input">
+                            <div class="form-actions">
+                                <button id="save-category-btn" class="btn btn-secondary btn-sm">
+                                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" />
+                                    </svg>
+                                    <span class="desktop-only">Add</span>
+                                </button>
+                                <button id="cancel-category-btn" class="btn btn-outline btn-sm">
+                                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                                    </svg>
+                                    <span class="desktop-only">Cancel</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- All Files Filter -->
+                        <button id="all-files-btn" class="category-item active">
+                            <div class="category-content">
+                                <div class="category-info">
+                                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,12H10V10H14M14,16H10V14H14M20,8L14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8M18,20H6V4H13V9H18V20Z" />
+                                    </svg>
+                                    <span class="category-name">All Files</span>
+                                </div>
+                                <span id="all-files-count" class="category-count">0</span>
+                            </div>
+                        </button>
+
+                        <!-- Categories List -->
+                        <div id="categories-list" class="categories-list"></div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+    <div class="main-content">
+                    <!-- Upload Area -->
+      <div class="upload-section">
+        <div id="upload-area" class="upload-area">
+      <input type="file" id="file-input" accept="application/pdf" multiple class="file-input">
+      <progress id="uploadProgress" value="0" max="100" style="width: 100%; display: none;"></progress>
+<div class="upload-content">
+        <div class="upload-icon">
+                                    <svg class="icon-large" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                                    </svg>
+        </div>
+        <div class="upload-text">
+          <p class="upload-title">Drop your PDF files here</p>
+          <p class="upload-subtitle">or click to browse your files</p>
+          <button id="choose-files-btn" class="btn btn-primary">Choose Files</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File List -->
+                    <div id="file-list-container" class="file-list-container hidden">
+                        <div class="file-list-header">
+                            <h2 id="file-list-title" class="file-list-title">
+                                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z" />
+                                </svg>
+                                <span id="file-list-title-text">All Files (0)</span>
+                            </h2>
+                            <div class="file-list-actions">
+                                <button id="download-all-btn" class="btn btn-secondary btn-sm hidden">
+                                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+                                    </svg>
+                                    <span class="desktop-only">Download All</span>
+                                </button>
+                                <button id="clear-all-btn" class="btn btn-outline btn-danger btn-sm">
+                                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                                    </svg>
+                                    <span class="desktop-only">Clear All</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="file-list" class="file-list"></div>
+                    </div>
+
+                    <!-- Empty States -->
+                    <div id="empty-category" class="empty-state hidden">
+                        <div class="empty-icon">
+                            <svg class="icon-xl" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.78 12.45,22 13,22C13.55,22 14.05,21.78 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.45 21.78,11.95 21.41,11.58Z" />
+                            </svg>
+                        </div>
+                        <p class="empty-title">No files in this category</p>
+                        <p class="empty-subtitle">Try selecting a different category or upload some files</p>
+                    </div>
+
+                    <div id="empty-files" class="empty-state hidden">
+                        <div class="empty-icon">
+                            <svg class="icon-xl" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                            </svg>
+                        </div>
+                        <p class="empty-title">No PDF files uploaded yet</p>
+                        <p class="empty-subtitle">Upload some files to get started organizing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Viewer Modal -->
+        <div id="pdf-viewer" class="pdf-viewer hidden">
+            <div class="pdf-viewer-header">
+                <div class="pdf-viewer-title">
+                    <button id="close-pdf-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                        </svg>
+                        <span class="desktop-only">Close</span>
+                    </button>
+                    <h2 id="pdf-title" class="pdf-title-text">PDF Title</h2>
+                </div>
+                <div class="pdf-controls">
+                    <button id="prev-page-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" />
+                        </svg>
+                    </button>
+                    <span id="page-info" class="page-info">1/1</span>
+                    <button id="next-page-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
+                        </svg>
+                    </button>
+                    <div class="pdf-controls-divider"></div>
+                    <button id="zoom-out-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15.5,14L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5M9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14M7,9H12V10H7V9Z" />
+                        </svg>
+                    </button>
+                    <span id="zoom-info" class="zoom-info">100%</span>
+                    <button id="zoom-in-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15.5,14L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5M9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14M10,7H9V9H7V10H9V12H10V10H12V9H10V7Z" />
+                        </svg>
+                    </button>
+                    <button id="rotate-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,3A9,9 0 0,0 3,12H0L4,16L8,12H5A7,7 0 0,1 12,5A7,7 0 0,1 19,12A7,7 0 0,1 12,19C10.5,19 9.09,18.5 7.94,17.7L6.5,19.14C8.04,20.3 9.94,21 12,21A9,9 0 0,0 21,12A9,9 0 0,0 12,3Z" />
+                        </svg>
+                    </button>
+                    <button id="download-pdf-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="pdf-content" class="pdf-content">
+                <div id="pdf-loading" class="pdf-loading">
+                    <div class="spinner"></div>
+                    <p>Loading PDF...</p>
+                </div>
+                <div id="pdf-error" class="pdf-error hidden">
+                    <div class="error-icon-large">⚠️</div>
+                    <p class="error-title">PDF Viewer Unavailable</p>
+                    <p class="error-subtitle">The PDF viewer failed to load. You can still download the file.</p>
+                    <button id="download-fallback-btn" class="btn btn-primary">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
+                        </svg>
+                        Download PDF
+                    </button>
+                </div>
+                <canvas id="pdf-canvas" class="pdf-canvas"></canvas>
+            </div>
+            <div id="pdf-footer" class="pdf-footer">
+                <div class="pdf-navigation">
+                    <button id="first-page-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.41,16.59L13.82,12L18.41,7.41L17,6L11,12L17,18L18.41,16.59M6,6H8V18H6V6Z" />
+                        </svg>
+                        <span class="desktop-only">First</span>
+                    </button>
+                    <button id="prev-page-footer-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z" />
+                        </svg>
+                        <span class="desktop-only">Prev</span>
+                    </button>
+                    <div class="page-input-group">
+                        <span class="page-label">Page</span>
+                        <input type="number" id="page-input" class="page-input" min="1" value="1">
+                        <span id="total-pages" class="page-label">of 1</span>
+                    </div>
+                    <button id="next-page-footer-btn" class="btn btn-outline btn-sm">
+                        <span class="desktop-only">Next</span>
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16,18V6H18V18H16M6,18L14.5,12L6,6V18Z" />
+                        </svg>
+                    </button>
+                    <button id="last-page-btn" class="btn btn-outline btn-sm">
+                        <span class="desktop-only">Last</span>
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M16,6H18V18H16V6Z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3 class="modal-title">Delete Category</h3>
+                <p id="delete-message" class="modal-message"></p>
+                <div class="modal-actions">
+                    <button id="cancel-delete-btn" class="btn btn-outline">Cancel</button>
+                    <button id="confirm-delete-btn" class="btn btn-danger">Delete Category</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="pdfmain.js"></script>
+    </body>
+</html>
