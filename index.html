@@ -8,11 +8,35 @@
     <link rel="stylesheet" href="pdfstyles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <!-- PDFNest API Configuration -->
+    <script>
+        // API Configuration
+        window.PDFNEST_API = {
+            BASE_URL: 'http://localhost:3001/api',
+            ENDPOINTS: {
+                AUTH: {
+                    REGISTER: '/auth/register',
+                    LOGIN: '/auth/login',
+                    PROFILE: '/auth/profile',
+                    PASSWORD: '/auth/password'
+                },
+                FILES: {
+                    UPLOAD: '/files/upload',
+                    LIST: '/files',
+                    DOWNLOAD: '/files/download',
+                    DELETE: '/files',
+                    CATEGORY: '/files/category',
+                    STORAGE: '/files/storage/usage'
+                },
+                CATEGORIES: {
+                    LIST: '/categories',
+                    ADD: '/categories',
+                    UPDATE: '/categories',
+                    DELETE: '/categories'
+                }
+            }
+        };
+    </script>
 
     <script type="module" src="pdfscript.js"></script>
 </head>
