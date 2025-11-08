@@ -623,14 +623,29 @@ function updateFileCategory(fileId, categoryId) {
 
 function downloadFile(file) {
     try {
-        const url = URL.createObjectURL(file.file);
+        let url;
+
+        if (file.url) {
+            // Firebase file - use direct URL
+            url = file.url;
+        } else if (file.file) {
+            // Local file - create object URL
+            url = URL.createObjectURL(file.file);
+        } else {
+            throw new Error('No valid file source available');
+        }
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `${file.name}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+
+        // Clean up object URL only for local files
+        if (!file.url && file.file) {
+            URL.revokeObjectURL(url);
+        }
     } catch (err) {
         console.error('Error downloading file:', err);
         showError('Failed to download file.');
