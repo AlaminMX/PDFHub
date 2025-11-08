@@ -17,6 +17,13 @@ let storageQuota = 524288000; // 500MB in bytes (FREE tier)
 let currentStorageUsage = 0;
 let userSubscription = null;
 
+// Make files globally accessible for Firebase integration
+window.files = files;
+window.updatePDFScriptFiles = function(newFiles) {
+    files = newFiles;
+    window.files = newFiles;
+};
+
 // PDF viewer state
 let viewingPDF = null;
 let currentPage = 1;
