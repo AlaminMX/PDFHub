@@ -164,20 +164,184 @@ function generateUniqueId() {
 // ----------------- Upload Handler -----------------
 fileInput.addEventListener("change", handleFileUpload);
 
+// ----------------- PDFNest Authentication -----------------
+async function initializeAuth() {
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      console.log("User authenticated:", user.email);
+      await initializeUserData(user);
+      showMainApp();
+    } else {
+      console.log("No user authenticated");
+      showAuthScreen();
+    }
+  });
+}
+
+async function initializeUserData(user) {
+  try {
+    // Create user document if it doesn't exist
+    const userDoc = await db.collection("users").doc(user.uid).get();
+
+    if (!userDoc.exists) {
+      await db.collection("users").doc(user.uid).set({
+        email: user.email,
+        displayName: user.displayName || user.email,
+        photoURL: user.photoURL || null,
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+        storageUsed: 0,
+        fileCount: 0,
+        migratedFromAnonymous: false
+      });
+
+      // Create default FREE subscription
+      await db.collection("users")
+        .doc(user.uid)
+        .collection("subscription")
+        .doc("current")
+        .set({
+          tier: 'FREE',
+          billingCycle: 'MONTHLY',
+          storageQuota: 524288000, // 500MB
+          status: 'ACTIVE',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: false
+        });
+
+      console.log("✅ User profile created for:", user.email);
+    } else {
+      // Update last login
+      await db.collection("users").doc(user.uid).update({
+        lastLoginAt: new Date()
+      });
+    }
+
+    // Load user's files from Firebase
+    await loadUserFiles(user.uid);
+  } catch (err) {
+    console.error("❌ Error initializing user data:", err);
+  }
+}
+
+async function loadUserFiles(userId) {
+  try {
+    const filesSnapshot = await db.collection("users")
+      .doc(userId)
+      .collection("files")
+      .get();
+
+    const userFiles = [];
+    filesSnapshot.forEach((doc) => {
+      userFiles.push(doc.data());
+    });
+
+    console.log("✅ Loaded", userFiles.length, "files for user");
+
+    // Update global files array for the UI
+    if (typeof window.files !== 'undefined') {
+      window.files = userFiles;
+      // Trigger UI update if function exists
+      if (typeof window.updateUI === 'function') {
+        window.updateUI();
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error loading user files:", err);
+  }
+}
+
+async function signInWithEmail(email, password) {
+  try {
+    const result = await auth.signInWithEmailAndPassword(email, password);
+    console.log("✅ Email sign-in successful:", result.user.email);
+    return result.user;
+  } catch (err) {
+    console.error("❌ Email sign-in failed:", err);
+    throw err;
+  }
+}
+
+async function signUpWithEmail(email, password, displayName) {
+  try {
+    const result = await auth.createUserWithEmailAndPassword(email, password);
+
+    // Update display name
+    await result.user.updateProfile({
+      displayName: displayName
+    });
+
+    // Send email verification
+    await result.user.sendEmailVerification();
+
+    console.log("✅ Email signup successful:", result.user.email);
+    console.log("📧 Verification email sent");
+
+    return result.user;
+  } catch (err) {
+    console.error("❌ Email signup failed:", err);
+    throw err;
+  }
+}
+
+async function signInWithGoogle() {
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await auth.signInWithPopup(provider);
+    console.log("✅ Google sign-in successful:", result.user.email);
+    return result.user;
+  } catch (err) {
+    console.error("❌ Google sign-in failed:", err);
+    throw err;
+  }
+}
+
+async function resetPassword(email) {
+  try {
+    await auth.sendPasswordResetEmail(email);
+    console.log("📧 Password reset email sent to:", email);
+    return true;
+  } catch (err) {
+    console.error("❌ Password reset failed:", err);
+    throw err;
+  }
+}
+
+async function signOut() {
+  try {
+    await auth.signOut();
+    console.log("✅ User signed out");
+  } catch (err) {
+    console.error("❌ Sign out failed:", err);
+  }
+}
+
+function showAuthScreen() {
+  const authScreen = document.getElementById('auth-screen');
+  const mainContainer = document.getElementById('main-container');
+
+  if (authScreen) authScreen.classList.remove('hidden');
+  if (mainContainer) mainContainer.classList.add('hidden');
+}
+
+function showMainApp() {
+  const authScreen = document.getElementById('auth-screen');
+  const mainContainer = document.getElementById('main-container');
+
+  if (authScreen) authScreen.classList.add('hidden');
+  if (mainContainer) mainContainer.classList.remove('hidden');
+}
+
 async function handleFileUpload(event) {
   const files = event.target.files;
   if (!files.length) return;
 
-  // Optional: sign in anonymously if no user is logged in
+  // Require authentication for uploads
   if (!auth.currentUser) {
-    try {
-      await auth.signInAnonymously();
-      console.log("Signed in as guest:", auth.currentUser.uid);
-    } catch (err) {
-      console.error("Anonymous sign-in failed:", err);
-      alert("Unable to upload without login.");
-      return;
-    }
+    alert("Please sign in to upload files.");
+    showAuthScreen();
+    return;
   }
 
   for (let file of files) {
