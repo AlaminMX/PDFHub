@@ -436,6 +436,61 @@
                 </div>
             </div>
         </div>
+
+        <!-- Upgrade Modal -->
+        <div id="upgrade-modal" class="modal hidden">
+            <div class="modal-content upgrade-modal">
+                <h3 class="modal-title">Storage Quota Exceeded</h3>
+                <div class="upgrade-info">
+                    <p class="upgrade-message">
+                        Your current storage usage is <strong id="upgrade-current-usage">0MB</strong>.
+                        Adding this file (<strong id="upgrade-new-file-size">0MB</strong>) would exceed your <strong>500MB</strong> quota.
+                    </p>
+                    <div class="upgrade-tiers">
+                        <div class="tier-card">
+                            <h4>FREE</h4>
+                            <div class="tier-price">$0/month</div>
+                            <div class="tier-storage">500MB Storage</div>
+                            <ul class="tier-features">
+                                <li>✓ Basic features</li>
+                                <li>✓ PDF organization</li>
+                            </ul>
+                        </div>
+                        <div class="tier-card featured">
+                            <h4>PRO</h4>
+                            <div class="tier-price">$9/month</div>
+                            <div class="tier-price-yearly">$92/year (15% off)</div>
+                            <div class="tier-storage">5GB Storage</div>
+                            <ul class="tier-features">
+                                <li>✓ All FREE features</li>
+                                <li>✓ 10x more storage</li>
+                                <li>✓ Advanced search</li>
+                                <li>✓ Batch operations</li>
+                                <li>✓ Priority support</li>
+                            </ul>
+                            <button class="btn btn-primary">Choose PRO</button>
+                        </div>
+                        <div class="tier-card">
+                            <h4>BUSINESS</h4>
+                            <div class="tier-price">$29/month</div>
+                            <div class="tier-price-yearly">$297/year (15% off)</div>
+                            <div class="tier-storage">50GB Storage</div>
+                            <ul class="tier-features">
+                                <li>✓ All PRO features</li>
+                                <li>✓ 10x PRO storage</li>
+                                <li>✓ Team collaboration</li>
+                                <li>✓ API access</li>
+                                <li>✓ Phone support</li>
+                            </ul>
+                            <button class="btn btn-secondary">Choose BUSINESS</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancel-upgrade-btn" class="btn btn-outline">Cancel Upload</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="pdfmain.js"></script>
     </body>
