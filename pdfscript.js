@@ -884,6 +884,170 @@ function handleKeyboardNavigation(e) {
     }
 }
 
+// Authentication Event Handlers
+function setupAuthEventListeners() {
+    // Sign In form
+    const signinBtn = document.getElementById('signin-btn');
+    const googleSigninBtn = document.getElementById('google-signin-btn');
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+    const showSignupBtn = document.getElementById('show-signup-btn');
+
+    if (signinBtn) {
+        signinBtn.addEventListener('click', handleSignIn);
+    }
+    if (googleSigninBtn) {
+        googleSigninBtn.addEventListener('click', handleGoogleSignIn);
+    }
+    if (forgotPasswordBtn) {
+        forgotPasswordBtn.addEventListener('click', showPasswordReset);
+    }
+    if (showSignupBtn) {
+        showSignupBtn.addEventListener('click', showSignUp);
+    }
+
+    // Sign Up form
+    const signupBtn = document.getElementById('signup-btn');
+    const googleSignupBtn = document.getElementById('google-signup-btn');
+    const showSigninBtn = document.getElementById('show-signin-btn');
+
+    if (signupBtn) {
+        signupBtn.addEventListener('click', handleSignUp);
+    }
+    if (googleSignupBtn) {
+        googleSignupBtn.addEventListener('click', handleGoogleSignUp);
+    }
+    if (showSigninBtn) {
+        showSigninBtn.addEventListener('click', showSignIn);
+    }
+
+    // Password Reset form
+    const resetPasswordBtn = document.getElementById('reset-password-btn');
+    const cancelResetBtn = document.getElementById('cancel-reset-btn');
+    const backToSigninBtn = document.getElementById('back-to-signin-btn');
+
+    if (resetPasswordBtn) {
+        resetPasswordBtn.addEventListener('click', handlePasswordReset);
+    }
+    if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', showSignIn);
+    }
+    if (backToSigninBtn) {
+        backToSigninBtn.addEventListener('click', showSignIn);
+    }
+
+    // User header actions
+    const signOutBtn = document.getElementById('sign-out-btn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', handleSignOut);
+    }
+
+    // Upgrade modal
+    const cancelUpgradeBtn = document.getElementById('cancel-upgrade-btn');
+    if (cancelUpgradeBtn) {
+        cancelUpgradeBtn.addEventListener('click', hideUpgradeModal);
+    }
+}
+
+async function handleSignIn() {
+    const email = document.getElementById('signin-email').value;
+    const password = document.getElementById('signin-password').value;
+
+    if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+    }
+
+    try {
+        await window.signInWithEmail(email, password);
+    } catch (error) {
+        alert('Sign in failed: ' + error.message);
+    }
+}
+
+async function handleSignUp() {
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+
+    if (!name || !email || !password) {
+        alert('Please fill in all fields.');
+        return;
+    }
+
+    try {
+        await window.signUpWithEmail(email, password, name);
+        alert('Account created! Please check your email to verify your account.');
+    } catch (error) {
+        alert('Sign up failed: ' + error.message);
+    }
+}
+
+async function handleGoogleSignIn() {
+    try {
+        await window.signInWithGoogle();
+    } catch (error) {
+        alert('Google sign in failed: ' + error.message);
+    }
+}
+
+async function handleGoogleSignUp() {
+    try {
+        await window.signInWithGoogle();
+    } catch (error) {
+        alert('Google sign up failed: ' + error.message);
+    }
+}
+
+async function handlePasswordReset() {
+    const email = document.getElementById('reset-email').value;
+
+    if (!email) {
+        alert('Please enter your email address.');
+        return;
+    }
+
+    try {
+        await window.resetPassword(email);
+        alert('Password reset email sent! Please check your inbox.');
+        showSignIn();
+    } catch (error) {
+        alert('Password reset failed: ' + error.message);
+    }
+}
+
+async function handleSignOut() {
+    try {
+        await window.signOut();
+    } catch (error) {
+        console.error('Sign out failed:', error);
+    }
+}
+
+function showSignIn() {
+    document.getElementById('signin-form').classList.remove('hidden');
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+}
+
+function showSignUp() {
+    document.getElementById('signin-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.remove('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+}
+
+function showPasswordReset() {
+    document.getElementById('signin-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.remove('hidden');
+}
+
+function hideUpgradeModal() {
+    const modal = document.getElementById('upgrade-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
 // UI updates
 function updateUI() {
     updateCategoriesList();
