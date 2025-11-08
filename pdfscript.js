@@ -12,6 +12,11 @@ let pdfJsLoaded = false;
 let pdfJsError = false;
 let currentError = null;
 
+// PDFNest Storage System
+let storageQuota = 524288000; // 500MB in bytes (FREE tier)
+let currentStorageUsage = 0;
+let userSubscription = null;
+
 // PDF viewer state
 let viewingPDF = null;
 let currentPage = 1;
