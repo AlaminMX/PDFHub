@@ -50,17 +50,140 @@
             </div>
         </div>
 
+        <!-- Authentication Screen -->
+        <div id="auth-screen" class="auth-screen">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <div class="auth-logo">
+                        <svg class="icon-large" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                        </svg>
+                    </div>
+                    <h1 class="auth-title">Welcome to PDFNest</h1>
+                    <p class="auth-subtitle">Your secure cloud PDF management platform</p>
+                </div>
+
+                <!-- Sign In Form -->
+                <div id="signin-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="signin-email" class="form-label">Email</label>
+                        <input type="email" id="signin-email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signin-password" class="form-label">Password</label>
+                        <input type="password" id="signin-password" class="form-input" placeholder="Enter your password" required>
+                    </div>
+                    <div class="form-actions">
+                        <button id="signin-btn" class="btn btn-primary btn-full">Sign In</button>
+                        <button id="google-signin-btn" class="btn btn-secondary btn-full">
+                            <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Sign in with Google
+                        </button>
+                    </div>
+                    <div class="auth-footer">
+                        <button id="forgot-password-btn" class="btn-link">Forgot password?</button>
+                        <button id="show-signup-btn" class="btn-link">Create account</button>
+                    </div>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div id="signup-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="signup-name" class="form-label">Full Name</label>
+                        <input type="text" id="signup-name" class="form-input" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email" class="form-label">Email</label>
+                        <input type="email" id="signup-email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password" class="form-label">Password</label>
+                        <input type="password" id="signup-password" class="form-input" placeholder="Create a password" required>
+                    </div>
+                    <div class="form-actions">
+                        <button id="signup-btn" class="btn btn-primary btn-full">Create Account</button>
+                        <button id="google-signup-btn" class="btn btn-secondary btn-full">
+                            <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Sign up with Google
+                        </button>
+                    </div>
+                    <div class="auth-footer">
+                        <button id="show-signin-btn" class="btn-link">Already have an account? Sign in</button>
+                    </div>
+                </div>
+
+                <!-- Password Reset Form -->
+                <div id="reset-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="reset-email" class="form-label">Email</label>
+                        <input type="email" id="reset-email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-actions">
+                        <button id="reset-password-btn" class="btn btn-primary btn-full">Send Reset Email</button>
+                        <button id="cancel-reset-btn" class="btn btn-outline btn-full">Cancel</button>
+                    </div>
+                    <div class="auth-footer">
+                        <button id="back-to-signin-btn" class="btn-link">Back to sign in</button>
+                    </div>
+                </div>
+
+                <!-- Storage Features -->
+                <div class="auth-features">
+                    <h3>Free Features:</h3>
+                    <ul class="features-list">
+                        <li>✓ 500MB cloud storage</li>
+                        <li>✓ PDF upload & organization</li>
+                        <li>✓ In-browser PDF viewer</li>
+                        <li>✓ Categories & file management</li>
+                        <li>✓ Mobile & desktop access</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Container -->
         <div id="main-container" class="container hidden">
-            <!-- Hero Section -->
-            <div class="hero-section">
-                <div class="hero-icon">
-                    <svg class="icon-large" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                    </svg>
+            <!-- User Header -->
+            <div class="user-header">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                        </svg>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Guest User</div>
+                        <div class="user-email" id="user-email">guest@example.com</div>
+                    </div>
                 </div>
-                <h1 class="hero-title">Organize Your PDFs</h1>
-                <p class="hero-subtitle">Upload, organize, and manage your PDF files with ease. Create categories and keep everything organized.</p>
+                <div class="header-actions">
+                    <!-- Storage Display -->
+                    <div id="storage-display" class="storage-display">
+                        <div class="storage-info">
+                            <span class="storage-text">0MB / 500MB</span>
+                            <div class="storage-bar">
+                                <div class="storage-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="upgrade-storage-btn" class="btn btn-primary btn-sm hidden">Upgrade</button>
+                    <button id="user-menu-btn" class="btn btn-outline btn-sm">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                        </svg>
+                    </button>
+                    <button id="sign-out-btn" class="btn btn-outline btn-sm">Sign Out</button>
+                </div>
             </div>
 
             <!-- Mobile Categories Toggle -->
