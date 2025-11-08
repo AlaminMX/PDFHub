@@ -885,6 +885,7 @@ function updateUI() {
     updateCategoriesList();
     updateFilesList();
     updateMobileCategoriesText();
+    updateStorageDisplay();
 }
 
 function updateCategoriesList() {
