@@ -189,56 +189,159 @@ async function handleFileUpload(event) {
   }
 }
 
+// ----------------- PDFNest Storage Management -----------------
+async function updateStorageUsage(fileSizeDelta, userId) {
+  try {
+    const userDoc = await db.collection("users").doc(userId).get();
+    let currentStorage = 0;
+
+    if (userDoc.exists) {
+      currentStorage = userDoc.data().storageUsed || 0;
+    }
+
+    const newStorageUsed = Math.max(0, currentStorage + fileSizeDelta);
+
+    await db.collection("users").doc(userId).set({
+      storageUsed: newStorageUsed,
+      updatedAt: new Date()
+    }, { merge: true });
+
+    console.log("✅ Storage usage updated:", newStorageUsed, "bytes");
+    return newStorageUsed;
+  } catch (err) {
+    console.error("❌ Error updating storage usage:", err);
+    throw err;
+  }
+}
+
+async function checkUserSubscription(userId) {
+  try {
+    const subscriptionDoc = await db.collection("users")
+      .doc(userId)
+      .collection("subscription")
+      .doc("current")
+      .get();
+
+    if (subscriptionDoc.exists) {
+      const subscription = subscriptionDoc.data();
+      const storageQuotas = {
+        'FREE': 524288000,      // 500MB
+        'PRO': 5368709120,      // 5GB
+        'BUSINESS': 53687091200 // 50GB
+      };
+
+      return {
+        tier: subscription.tier || 'FREE',
+        storageQuota: storageQuotas[subscription.tier] || storageQuotas['FREE'],
+        status: subscription.status || 'ACTIVE'
+      };
+    }
+
+    // Default FREE tier
+    return {
+      tier: 'FREE',
+      storageQuota: 524288000, // 500MB
+      status: 'ACTIVE'
+    };
+  } catch (err) {
+    console.error("❌ Error checking subscription:", err);
+    // Default to FREE tier on error
+    return {
+      tier: 'FREE',
+      storageQuota: 524288000,
+      status: 'ACTIVE'
+    };
+  }
+}
+
+async function validateStorageQuota(fileSize, userId) {
+  try {
+    const subscription = await checkUserSubscription(userId);
+    const userDoc = await db.collection("users").doc(userId).get();
+    const currentUsage = userDoc.data()?.storageUsed || 0;
+
+    const projectedUsage = currentUsage + fileSize;
+
+    if (projectedUsage > subscription.storageQuota) {
+      const currentUsageMB = (currentUsage / (1024 * 1024)).toFixed(1);
+      const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(1);
+      const quotaMB = (subscription.storageQuota / (1024 * 1024)).toFixed(1);
+
+      throw new Error(
+        `Storage quota exceeded!\n\nCurrent usage: ${currentUsageMB}MB\nNew file: ${fileSizeMB}MB\nQuota: ${quotaMB}MB\n\nPlease upgrade to ${subscription.tier === 'FREE' ? 'PRO' : 'BUSINESS'} tier for more storage.`
+      );
+    }
+
+    return true;
+  } catch (err) {
+    console.error("❌ Storage quota validation failed:", err);
+    throw err;
+  }
+}
+
 // ----------------- Upload File to Firebase Storage -----------------
 async function uploadFile(file, currentUser) {
   const userId = currentUser.uid || "guest";
-  const fileId = generateUniqueId();
-  const storageRef = storage.ref(`pdfs/${userId}/${fileId}-${file.name}`);
-  
-  progressBar.style.display = "block";
-  progressBar.value = 0;
 
-  const uploadTask = storageRef.put(file);
+  try {
+    // Validate storage quota before upload
+    await validateStorageQuota(file.size, userId);
 
-  uploadTask.on(
-    "state_changed",
-    (snapshot) => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      progressBar.value = progress;
-    },
-    (error) => {
-      console.error("Upload failed:", error);
-      alert("Upload failed: " + error.message);
-      progressBar.style.display = "none";
-    },
-    async () => {
-      // Upload completed → get download URL
-      const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+    const fileId = generateUniqueId();
+    const storageRef = storage.ref(`pdfs/${userId}/${fileId}-${file.name}`);
 
-      // Build metadata
-      const fileMeta = {
-        id: fileId,
-        name: file.name,
-        size: file.size,
-        url: downloadURL,
-        categoryId: "Uncategorized",
-        uploadedAt: new Date().toISOString()
-      };
+    progressBar.style.display = "block";
+    progressBar.value = 0;
 
-      // Save metadata to Firestore
-      try {
-        await db.collection("users")
-          .doc(userId)
-          .collection("files")
-          .doc(fileId)
-          .set(fileMeta);
+    const uploadTask = storageRef.put(file);
 
-        console.log("✅ File metadata saved:", fileMeta);
-      } catch (err) {
-        console.error("❌ Error saving metadata:", err);
-      } finally {
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        progressBar.value = progress;
+      },
+      (error) => {
+        console.error("Upload failed:", error);
+        alert("Upload failed: " + error.message);
         progressBar.style.display = "none";
+      },
+      async () => {
+        // Upload completed → get download URL
+        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+
+        // Build metadata
+        const fileMeta = {
+          id: fileId,
+          name: file.name,
+          size: file.size,
+          url: downloadURL,
+          categoryId: "Uncategorized",
+          uploadedAt: new Date().toISOString()
+        };
+
+        // Save metadata to Firestore
+        try {
+          await db.collection("users")
+            .doc(userId)
+            .collection("files")
+            .doc(fileId)
+            .set(fileMeta);
+
+          // Update storage usage
+          await updateStorageUsage(file.size, userId);
+
+          console.log("✅ File metadata saved:", fileMeta);
+        } catch (err) {
+          console.error("❌ Error saving metadata:", err);
+        } finally {
+          progressBar.style.display = "none";
+        }
       }
-    }
-  );
+    );
+  } catch (err) {
+    console.error("❌ Upload validation failed:", err);
+    alert(err.message);
+    progressBar.style.display = "none";
+  }
 }
