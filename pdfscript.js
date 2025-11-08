@@ -531,6 +531,13 @@ function handleFileSelect(e) {
 async function addFiles(newFiles) {
     try {
         dismissError();
+
+        // Check storage quota for all files before processing
+        const totalFileSize = newFiles.reduce((total, file) => total + file.size, 0);
+        if (!checkStorageQuota(totalFileSize)) {
+            return; // Upgrade modal shown by checkStorageQuota
+        }
+
         const pdfFiles = await Promise.all(
             newFiles.map(async (file) => {
                 try {
@@ -557,6 +564,7 @@ async function addFiles(newFiles) {
         );
 
         files.push(...pdfFiles);
+        updateStorageDisplay(); // Update storage usage display
         updateUI();
     } catch (err) {
         console.error('Error adding files:', err);
