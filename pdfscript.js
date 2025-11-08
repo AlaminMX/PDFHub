@@ -542,40 +542,11 @@ async function addFiles(newFiles) {
     try {
         dismissError();
 
-        // Check storage quota for all files before processing
-        const totalFileSize = newFiles.reduce((total, file) => total + file.size, 0);
-        if (!checkStorageQuota(totalFileSize)) {
-            return; // Upgrade modal shown by checkStorageQuota
-        }
+        // Use API upload instead of local processing
+        const categoryId = selectedCategory === 'all' ? 'uncategorized' : selectedCategory;
+        await window.handleFileUploadAPI(newFiles, categoryId);
 
-        const pdfFiles = await Promise.all(
-            newFiles.map(async (file) => {
-                try {
-                    const dataUrl = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error('Failed to read file'));
-                        reader.readAsDataURL(file);
-                    });
-
-                    return {
-                        id: Math.random().toString(36).substr(2, 9),
-                        name: file.name.replace('.pdf', ''),
-                        size: file.size,
-                        file,
-                        dataUrl,
-                        categoryId: 'uncategorized'
-                    };
-                } catch (err) {
-                    console.error('Error processing file:', file.name, err);
-                    throw err;
-                }
-            })
-        );
-
-        files.push(...pdfFiles);
-        updateStorageDisplay(); // Update storage usage display
-        updateUI();
+        // The API handles file addition and UI updates
     } catch (err) {
         console.error('Error adding files:', err);
         showError('Failed to add some files. Please try again.');
