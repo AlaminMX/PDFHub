@@ -187,6 +187,9 @@ function setupEventListeners() {
     // Error handling
     elements.dismissError.addEventListener('click', dismissError);
 
+    // Authentication event listeners
+    setupAuthEventListeners();
+
     // Mobile categories toggle
     elements.mobileCategoriesBtn.addEventListener('click', toggleMobileCategories);
 
