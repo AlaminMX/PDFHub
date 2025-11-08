@@ -576,6 +576,7 @@ async function addFiles(newFiles) {
 function deleteFile(id) {
     try {
         files = files.filter(file => file.id !== id);
+        updateStorageDisplay(); // Update storage usage after deletion
         updateUI();
     } catch (err) {
         console.error('Error deleting file:', err);
