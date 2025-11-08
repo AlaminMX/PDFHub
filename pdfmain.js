@@ -331,6 +331,30 @@ function showMainApp() {
 
   if (authScreen) authScreen.classList.add('hidden');
   if (mainContainer) mainContainer.classList.remove('hidden');
+
+  // Update user header information
+  updateUserHeader();
+}
+
+function updateUserHeader() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userName = document.getElementById('user-name');
+  const userEmail = document.getElementById('user-email');
+  const userAvatar = document.getElementById('user-avatar');
+
+  if (userName) {
+    userName.textContent = user.displayName || user.email.split('@')[0];
+  }
+
+  if (userEmail) {
+    userEmail.textContent = user.email;
+  }
+
+  if (userAvatar && user.photoURL) {
+    userAvatar.innerHTML = `<img src="${user.photoURL}" alt="User Avatar" class="avatar-img">`;
+  }
 }
 
 async function handleFileUpload(event) {
