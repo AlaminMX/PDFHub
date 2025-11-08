@@ -234,18 +234,33 @@ async function loadUserFiles(userId) {
 
     const userFiles = [];
     filesSnapshot.forEach((doc) => {
-      userFiles.push(doc.data());
+      const fileData = doc.data();
+      // Convert Firebase file data to UI-compatible format
+      userFiles.push({
+        id: fileData.id,
+        name: fileData.name,
+        size: fileData.size,
+        url: fileData.url,
+        categoryId: fileData.categoryId || 'uncategorized',
+        uploadedAt: fileData.uploadedAt,
+        file: null, // Will be loaded when needed for PDF viewer
+        dataUrl: null // Will be loaded when needed
+      });
     });
 
     console.log("✅ Loaded", userFiles.length, "files for user");
 
     // Update global files array for the UI
-    if (typeof window.files !== 'undefined') {
-      window.files = userFiles;
-      // Trigger UI update if function exists
-      if (typeof window.updateUI === 'function') {
-        window.updateUI();
-      }
+    window.files = userFiles;
+
+    // Update files array in pdfscript.js if it exists
+    if (typeof window.updatePDFScriptFiles === 'function') {
+      window.updatePDFScriptFiles(userFiles);
+    }
+
+    // Trigger UI update if function exists
+    if (typeof window.updateUI === 'function') {
+      window.updateUI();
     }
   } catch (err) {
     console.error("❌ Error loading user files:", err);
