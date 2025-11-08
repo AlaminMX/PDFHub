@@ -53,6 +53,76 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDataFromStorage();
 });
 
+// PDFNest Storage Management Functions
+function calculateStorageUsage() {
+    let totalUsage = 0;
+
+    // Calculate from localStorage files
+    files.forEach(file => {
+        totalUsage += file.size || 0;
+    });
+
+    currentStorageUsage = totalUsage;
+    return totalUsage;
+}
+
+function checkStorageQuota(fileSize) {
+    const currentUsage = calculateStorageUsage();
+    const projectedUsage = currentUsage + fileSize;
+
+    if (projectedUsage > storageQuota) {
+        showUpgradeModal(currentUsage, fileSize, projectedUsage);
+        return false;
+    }
+
+    return true;
+}
+
+function updateStorageDisplay() {
+    const usage = calculateStorageUsage();
+    const usagePercentage = (usage / storageQuota) * 100;
+    const usageMB = (usage / (1024 * 1024)).toFixed(1);
+    const quotaMB = (storageQuota / (1024 * 1024)).toFixed(1);
+
+    const storageDisplay = document.getElementById('storage-display');
+    if (storageDisplay) {
+        storageDisplay.innerHTML = `
+            <div class="storage-info">
+                <span class="storage-text">${usageMB}MB / ${quotaMB}MB</span>
+                <div class="storage-bar">
+                    <div class="storage-fill" style="width: ${usagePercentage}%"></div>
+                </div>
+            </div>
+        `;
+
+        // Show upgrade button if usage > 80%
+        const upgradeBtn = document.getElementById('upgrade-storage-btn');
+        if (upgradeBtn) {
+            upgradeBtn.style.display = usagePercentage > 80 ? 'block' : 'none';
+        }
+    }
+}
+
+function showUpgradeModal(currentUsage, newFileSize, projectedUsage) {
+    const currentUsageMB = (currentUsage / (1024 * 1024)).toFixed(1);
+    const newFileSizeMB = (newFileSize / (1024 * 1024)).toFixed(1);
+    const projectedUsageMB = (projectedUsage / (1024 * 1024)).toFixed(1);
+    const quotaMB = (storageQuota / (1024 * 1024)).toFixed(1);
+
+    const modal = document.getElementById('upgrade-modal');
+    if (modal) {
+        document.getElementById('upgrade-current-usage').textContent = currentUsageMB;
+        document.getElementById('upgrade-new-file-size').textContent = newFileSizeMB;
+        document.getElementById('upgrade-projected-usage').textContent = projectedUsageMB;
+        document.getElementById('upgrade-quota').textContent = quotaMB;
+
+        modal.classList.remove('hidden');
+    } else {
+        // Fallback: show alert
+        alert(`Storage quota exceeded!\n\nCurrent usage: ${currentUsageMB}MB\nNew file: ${newFileSizeMB}MB\nProjected: ${projectedUsageMB}MB\nQuota: ${quotaMB}MB\n\nPlease upgrade your storage plan.`);
+    }
+}
+
 function initializeElements() {
     elements = {
         loadingScreen: document.getElementById('loading-screen'),
