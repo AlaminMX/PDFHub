@@ -509,3 +509,13 @@ async function uploadFile(file, currentUser) {
     progressBar.style.display = "none";
   }
 }
+
+// Initialize PDFNest authentication system
+initializeAuth();
+
+// Make auth functions globally available for the UI
+window.signInWithEmail = signInWithEmail;
+window.signUpWithEmail = signUpWithEmail;
+window.signInWithGoogle = signInWithGoogle;
+window.resetPassword = resetPassword;
+window.signOut = signOut;
