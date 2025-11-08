@@ -676,7 +676,20 @@ async function openPDF(file) {
 
         dismissError();
 
-        const arrayBuffer = await file.file.arrayBuffer();
+        let arrayBuffer;
+
+        // Load PDF from Firebase URL or local file
+        if (file.url && !file.file) {
+            // Firebase file - fetch from URL
+            const response = await fetch(file.url);
+            arrayBuffer = await response.arrayBuffer();
+        } else if (file.file) {
+            // Local file - use file object
+            arrayBuffer = await file.file.arrayBuffer();
+        } else {
+            throw new Error('No valid file source available');
+        }
+
         const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         pdfDoc = pdf;
