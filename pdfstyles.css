@@ -32,10 +32,382 @@ body {
     white-space: nowrap; 
 }
 
-/* Background */
+/* Background - PDFNest Branding */
 .bg-gradient {
-    background: linear-gradient(135deg, #f9fafb 0%, #fef2f2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3730a3 100%);
     min-height: 100vh;
+}
+
+/* PDFNest Authentication Screen */
+.auth-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3730a3 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    padding: 1rem;
+}
+
+.auth-container {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    max-width: 24rem;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    background: linear-gradient(135deg, #1e3a8a, #3730a3);
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.auth-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.auth-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.auth-form {
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.auth-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #1e40af;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    color: #1e3a8a;
+}
+
+.auth-features {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.auth-features h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.features-list li {
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding: 0.25rem 0;
+}
+
+/* User Header */
+.user-header {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    overflow: hidden;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-details {
+    flex: 1;
+}
+
+.user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.user-email {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Storage Display */
+.storage-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.storage-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.storage-text {
+    font-size: 0.75rem;
+    color: #374151;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.storage-bar {
+    width: 4rem;
+    height: 0.5rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.storage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    transition: width 0.3s ease;
+}
+
+.storage-fill.warning {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.storage-fill.danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* Upgrade Modal */
+.upgrade-modal {
+    max-width: 48rem;
+    width: 100%;
+}
+
+.upgrade-info {
+    margin-bottom: 1.5rem;
+}
+
+.upgrade-message {
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.upgrade-tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tier-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.tier-card:hover {
+    border-color: #1e40af;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tier-card.featured {
+    border-color: #1e40af;
+    background: #eff6ff;
+    transform: scale(1.02);
+}
+
+.tier-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.tier-price {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.tier-price-yearly {
+    font-size: 0.75rem;
+    color: #059669;
+    margin-bottom: 0.5rem;
+}
+
+.tier-storage {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.tier-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    text-align: left;
+}
+
+.tier-features li {
+    font-size: 0.75rem;
+    color: #374151;
+    padding: 0.25rem 0;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* PDFNest Button Colors - Updated */
+.btn-primary {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e40af, #3730a3);
+}
+
+/* Update existing primary buttons to use PDFNest colors */
+.hero-icon {
+    background: linear-gradient(135deg, #1e3a8a, #3730a3);
+    color: white;
+}
+
+.sidebar-title .icon {
+    color: #1e40af;
+}
+
+.upload-icon {
+    background: linear-gradient(135deg, #1e3a8a, #3730a3);
+    color: white;
+}
+
+.file-icon {
+    background: linear-gradient(135deg, #1e3a8a, #3730a3);
+    color: white;
+}
+
+.file-list-title .icon {
+    color: #1e40af;
+}
+
+.mobile-toggle-btn {
+    background: linear-gradient(135deg, #1e3a8a, #3730a3);
+    color: white;
+    border: none;
+}
+
+.mobile-toggle-btn:hover {
+    background: linear-gradient(135deg, #1e40af, #3730a3);
+}
+
+.category-item.active {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: #1e40af;
+}
+
+.spinner {
+    border: 4px solid #dbeafe;
+    border-top: 4px solid #1e40af;
+}
+
+.spinner-small {
+    border: 2px solid #dbeafe;
+    border-top: 2px solid #1e40af;
 }
 
 /* Container */
@@ -49,11 +421,19 @@ body {
 .loading-screen {
     position: fixed;
     inset: 0;
-    background: linear-gradient(135deg, #f9fafb 0%, #fef2f2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3730a3 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 50;
+}
+
+.loading-screen .text-center {
+    color: white;
+}
+
+.loading-screen p {
+    color: #e5e7eb;
 }
 
 .spinner {

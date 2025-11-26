@@ -12,6 +12,18 @@ let pdfJsLoaded = false;
 let pdfJsError = false;
 let currentError = null;
 
+// PDFNest Storage System
+let storageQuota = 524288000; // 500MB in bytes (FREE tier)
+let currentStorageUsage = 0;
+let userSubscription = null;
+
+// Make files globally accessible for Firebase integration
+window.files = files;
+window.updatePDFScriptFiles = function(newFiles) {
+    files = newFiles;
+    window.files = newFiles;
+};
+
 // PDF viewer state
 let viewingPDF = null;
 let currentPage = 1;
@@ -47,6 +59,76 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPDFJS();
     loadDataFromStorage();
 });
+
+// PDFNest Storage Management Functions
+function calculateStorageUsage() {
+    let totalUsage = 0;
+
+    // Calculate from localStorage files
+    files.forEach(file => {
+        totalUsage += file.size || 0;
+    });
+
+    currentStorageUsage = totalUsage;
+    return totalUsage;
+}
+
+function checkStorageQuota(fileSize) {
+    const currentUsage = calculateStorageUsage();
+    const projectedUsage = currentUsage + fileSize;
+
+    if (projectedUsage > storageQuota) {
+        showUpgradeModal(currentUsage, fileSize, projectedUsage);
+        return false;
+    }
+
+    return true;
+}
+
+function updateStorageDisplay() {
+    const usage = calculateStorageUsage();
+    const usagePercentage = (usage / storageQuota) * 100;
+    const usageMB = (usage / (1024 * 1024)).toFixed(1);
+    const quotaMB = (storageQuota / (1024 * 1024)).toFixed(1);
+
+    const storageDisplay = document.getElementById('storage-display');
+    if (storageDisplay) {
+        storageDisplay.innerHTML = `
+            <div class="storage-info">
+                <span class="storage-text">${usageMB}MB / ${quotaMB}MB</span>
+                <div class="storage-bar">
+                    <div class="storage-fill" style="width: ${usagePercentage}%"></div>
+                </div>
+            </div>
+        `;
+
+        // Show upgrade button if usage > 80%
+        const upgradeBtn = document.getElementById('upgrade-storage-btn');
+        if (upgradeBtn) {
+            upgradeBtn.style.display = usagePercentage > 80 ? 'block' : 'none';
+        }
+    }
+}
+
+function showUpgradeModal(currentUsage, newFileSize, projectedUsage) {
+    const currentUsageMB = (currentUsage / (1024 * 1024)).toFixed(1);
+    const newFileSizeMB = (newFileSize / (1024 * 1024)).toFixed(1);
+    const projectedUsageMB = (projectedUsage / (1024 * 1024)).toFixed(1);
+    const quotaMB = (storageQuota / (1024 * 1024)).toFixed(1);
+
+    const modal = document.getElementById('upgrade-modal');
+    if (modal) {
+        document.getElementById('upgrade-current-usage').textContent = currentUsageMB;
+        document.getElementById('upgrade-new-file-size').textContent = newFileSizeMB;
+        document.getElementById('upgrade-projected-usage').textContent = projectedUsageMB;
+        document.getElementById('upgrade-quota').textContent = quotaMB;
+
+        modal.classList.remove('hidden');
+    } else {
+        // Fallback: show alert
+        alert(`Storage quota exceeded!\n\nCurrent usage: ${currentUsageMB}MB\nNew file: ${newFileSizeMB}MB\nProjected: ${projectedUsageMB}MB\nQuota: ${quotaMB}MB\n\nPlease upgrade your storage plan.`);
+    }
+}
 
 function initializeElements() {
     elements = {
@@ -111,6 +193,9 @@ function initializeElements() {
 function setupEventListeners() {
     // Error handling
     elements.dismissError.addEventListener('click', dismissError);
+
+    // Authentication event listeners
+    setupAuthEventListeners();
 
     // Mobile categories toggle
     elements.mobileCategoriesBtn.addEventListener('click', toggleMobileCategories);
@@ -456,33 +541,12 @@ function handleFileSelect(e) {
 async function addFiles(newFiles) {
     try {
         dismissError();
-        const pdfFiles = await Promise.all(
-            newFiles.map(async (file) => {
-                try {
-                    const dataUrl = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error('Failed to read file'));
-                        reader.readAsDataURL(file);
-                    });
 
-                    return {
-                        id: Math.random().toString(36).substr(2, 9),
-                        name: file.name.replace('.pdf', ''),
-                        size: file.size,
-                        file,
-                        dataUrl,
-                        categoryId: 'uncategorized'
-                    };
-                } catch (err) {
-                    console.error('Error processing file:', file.name, err);
-                    throw err;
-                }
-            })
-        );
+        // Use API upload instead of local processing
+        const categoryId = selectedCategory === 'all' ? 'uncategorized' : selectedCategory;
+        await window.handleFileUploadAPI(newFiles, categoryId);
 
-        files.push(...pdfFiles);
-        updateUI();
+        // The API handles file addition and UI updates
     } catch (err) {
         console.error('Error adding files:', err);
         showError('Failed to add some files. Please try again.');
@@ -493,6 +557,7 @@ async function addFiles(newFiles) {
 function deleteFile(id) {
     try {
         files = files.filter(file => file.id !== id);
+        updateStorageDisplay(); // Update storage usage after deletion
         updateUI();
     } catch (err) {
         console.error('Error deleting file:', err);
@@ -529,14 +594,29 @@ function updateFileCategory(fileId, categoryId) {
 
 function downloadFile(file) {
     try {
-        const url = URL.createObjectURL(file.file);
+        let url;
+
+        if (file.url) {
+            // Firebase file - use direct URL
+            url = file.url;
+        } else if (file.file) {
+            // Local file - create object URL
+            url = URL.createObjectURL(file.file);
+        } else {
+            throw new Error('No valid file source available');
+        }
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `${file.name}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+
+        // Clean up object URL only for local files
+        if (!file.url && file.file) {
+            URL.revokeObjectURL(url);
+        }
     } catch (err) {
         console.error('Error downloading file:', err);
         showError('Failed to download file.');
@@ -582,7 +662,20 @@ async function openPDF(file) {
 
         dismissError();
 
-        const arrayBuffer = await file.file.arrayBuffer();
+        let arrayBuffer;
+
+        // Load PDF from Firebase URL or local file
+        if (file.url && !file.file) {
+            // Firebase file - fetch from URL
+            const response = await fetch(file.url);
+            arrayBuffer = await response.arrayBuffer();
+        } else if (file.file) {
+            // Local file - use file object
+            arrayBuffer = await file.file.arrayBuffer();
+        } else {
+            throw new Error('No valid file source available');
+        }
+
         const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         pdfDoc = pdf;
@@ -797,11 +890,176 @@ function handleKeyboardNavigation(e) {
     }
 }
 
+// Authentication Event Handlers
+function setupAuthEventListeners() {
+    // Sign In form
+    const signinBtn = document.getElementById('signin-btn');
+    const googleSigninBtn = document.getElementById('google-signin-btn');
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+    const showSignupBtn = document.getElementById('show-signup-btn');
+
+    if (signinBtn) {
+        signinBtn.addEventListener('click', handleSignIn);
+    }
+    if (googleSigninBtn) {
+        googleSigninBtn.addEventListener('click', handleGoogleSignIn);
+    }
+    if (forgotPasswordBtn) {
+        forgotPasswordBtn.addEventListener('click', showPasswordReset);
+    }
+    if (showSignupBtn) {
+        showSignupBtn.addEventListener('click', showSignUp);
+    }
+
+    // Sign Up form
+    const signupBtn = document.getElementById('signup-btn');
+    const googleSignupBtn = document.getElementById('google-signup-btn');
+    const showSigninBtn = document.getElementById('show-signin-btn');
+
+    if (signupBtn) {
+        signupBtn.addEventListener('click', handleSignUp);
+    }
+    if (googleSignupBtn) {
+        googleSignupBtn.addEventListener('click', handleGoogleSignUp);
+    }
+    if (showSigninBtn) {
+        showSigninBtn.addEventListener('click', showSignIn);
+    }
+
+    // Password Reset form
+    const resetPasswordBtn = document.getElementById('reset-password-btn');
+    const cancelResetBtn = document.getElementById('cancel-reset-btn');
+    const backToSigninBtn = document.getElementById('back-to-signin-btn');
+
+    if (resetPasswordBtn) {
+        resetPasswordBtn.addEventListener('click', handlePasswordReset);
+    }
+    if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', showSignIn);
+    }
+    if (backToSigninBtn) {
+        backToSigninBtn.addEventListener('click', showSignIn);
+    }
+
+    // User header actions
+    const signOutBtn = document.getElementById('sign-out-btn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', handleSignOut);
+    }
+
+    // Upgrade modal
+    const cancelUpgradeBtn = document.getElementById('cancel-upgrade-btn');
+    if (cancelUpgradeBtn) {
+        cancelUpgradeBtn.addEventListener('click', hideUpgradeModal);
+    }
+}
+
+async function handleSignIn() {
+    const email = document.getElementById('signin-email').value;
+    const password = document.getElementById('signin-password').value;
+
+    if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+    }
+
+    try {
+        await window.signInWithEmail(email, password);
+    } catch (error) {
+        alert('Sign in failed: ' + error.message);
+    }
+}
+
+async function handleSignUp() {
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+
+    if (!name || !email || !password) {
+        alert('Please fill in all fields.');
+        return;
+    }
+
+    try {
+        await window.signUpWithEmail(email, password, name);
+        alert('Account created! Please check your email to verify your account.');
+    } catch (error) {
+        alert('Sign up failed: ' + error.message);
+    }
+}
+
+async function handleGoogleSignIn() {
+    try {
+        await window.signInWithGoogle();
+    } catch (error) {
+        alert('Google sign in failed: ' + error.message);
+    }
+}
+
+async function handleGoogleSignUp() {
+    try {
+        await window.signInWithGoogle();
+    } catch (error) {
+        alert('Google sign up failed: ' + error.message);
+    }
+}
+
+async function handlePasswordReset() {
+    const email = document.getElementById('reset-email').value;
+
+    if (!email) {
+        alert('Please enter your email address.');
+        return;
+    }
+
+    try {
+        await window.resetPassword(email);
+        alert('Password reset email sent! Please check your inbox.');
+        showSignIn();
+    } catch (error) {
+        alert('Password reset failed: ' + error.message);
+    }
+}
+
+async function handleSignOut() {
+    try {
+        await window.signOut();
+    } catch (error) {
+        console.error('Sign out failed:', error);
+    }
+}
+
+function showSignIn() {
+    document.getElementById('signin-form').classList.remove('hidden');
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+}
+
+function showSignUp() {
+    document.getElementById('signin-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.remove('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+}
+
+function showPasswordReset() {
+    document.getElementById('signin-form').classList.add('hidden');
+    document.getElementById('signup-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.remove('hidden');
+}
+
+function hideUpgradeModal() {
+    const modal = document.getElementById('upgrade-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
 // UI updates
 function updateUI() {
     updateCategoriesList();
     updateFilesList();
     updateMobileCategoriesText();
+    updateStorageDisplay();
 }
 
 function updateCategoriesList() {
